@@ -50,9 +50,61 @@ function calculateRoute() {
 
 function orderAddressesByProximity(addresses) {
     console.log('Ordering addresses by proximity...');
-    // Placeholder for reordering addresses based on proximity
-    // Currently returning the original order
-    return addresses;
+    // Calculate distance matrix
+    const distanceMatrix = [];
+    for (let i = 0; i < addresses.length; i++) {
+        const row = [];
+        for (let j = 0; j < addresses.length; j++) {
+            if (i === j) {
+                row.push(0); // Distance from a point to itself is 0
+            } else {
+                row.push(calculateDistance(addresses[i], addresses[j]));
+            }
+        }
+        distanceMatrix.push(row);
+    }
+
+    // Create pairs of addresses with distances
+    const addressPairs = [];
+    for (let i = 0; i < addresses.length; i++) {
+        for (let j = i + 1; j < addresses.length; j++) {
+            addressPairs.push({
+                address1: addresses[i],
+                address2: addresses[j],
+                distance: distanceMatrix[i][j]
+            });
+        }
+    }
+
+    // Sort address pairs by distance
+    addressPairs.sort((a, b) => a.distance - b.distance);
+
+    // Reorder addresses based on sorted pairs
+    const orderedAddresses = [addressPairs[0].address1, addressPairs[0].address2];
+    for (let i = 1; i < addressPairs.length; i++) {
+        const lastAddress = orderedAddresses[orderedAddresses.length - 1];
+        if (lastAddress === addressPairs[i].address1) {
+            orderedAddresses.push(addressPairs[i].address2);
+        } else if (lastAddress === addressPairs[i].address2) {
+            orderedAddresses.push(addressPairs[i].address1);
+        }
+    }
+
+    return orderedAddresses;
+}
+
+function calculateDistance(point1, point2) {
+    const { lat: lat1, lon: lon1 } = point1;
+    const { lat: lat2, lon: lon2 } = point2;
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    return distance;
 }
 
 function findOptimalRoute(addresses) {
